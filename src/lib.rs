@@ -5,6 +5,7 @@
 /// Module db
 mod db;
 mod errors;
+mod utils;
 
 use db::Db;
 

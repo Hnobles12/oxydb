@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Serializer;
 
 use crate::errors::GroupError;
 use crate::errors::ItemError;
+use crate::utils::Path;
+use crate::utils::to_json;
 
 /// Database struct housing groups and relations between items.
 pub struct Db {
@@ -23,11 +26,11 @@ impl Db {
     }
 
     /// Finds and returns group with item of type `I`, or creates it if it is not present.
-    fn get_group(&self, name:String) -> Result<&Group, GroupError> {
+    fn get_group(&mut self, name:String) -> Result<&mut Group, GroupError> {
         if self.groups.contains_key::<String>(&name) {
-            let group = self.groups.get(&name);
+            let mut group = self.groups.get_mut(&name);
 
-            if let Some(group) = group{
+            if let Some(mut group) = group{
                 return Ok(group);
             }
             else {
@@ -53,10 +56,19 @@ impl Db {
     }
 
     // Inserts new item into group.
-    pub fn new_item<T: Serialize>(&mut self, group: String) -> Result<(), ItemError> {
-                
+    pub fn insert<T: Serialize>(&mut self, path: String, data: T) -> Result<(), ItemError> {
+        let bytes = serde_json::to_string(&data).unwrap();
 
-                Ok(())
+        let path = Path::from_string(path.clone());
+        let json = to_json::<T>(data);
+
+        let item = Item{key: path.item_name, path: path.path, data: json};
+
+        let mut group: &mut Group = self.get_group(path.group_name.clone()).unwrap();
+
+        group.items.insert(item.key.clone(), item);
+
+        Ok(())
     }
 }
 
@@ -73,15 +85,15 @@ impl Group {
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Item {
-    pub id: u64,
+    pub key: String,
     pub path: String,
     pub data: String
 }
 
-impl Item {
-    // pub fn new(id: u64) -> Item {
-
-    // }
-}
+// impl Item {
+//     pub fn new(path: String) -> Item {
+        
+//     }
+// }
 
 pub struct Relation {}
